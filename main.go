@@ -29,8 +29,8 @@ var sizeY int
 var data [][]Cell
 
 func main() {
-	sizeX = 100
-	sizeY = 100
+	sizeX = 20
+	sizeY = 20
 
 	port := 3333
 
@@ -163,7 +163,7 @@ func handler(conn net.Conn) {
 	defer conn.Close()
 
 	var (
-		buf = make([]byte, 1024)
+		buf = make([]byte, 1024*48)
 		r   = bufio.NewReader(conn)
 		w   = bufio.NewWriter(conn)
 	)
@@ -181,17 +181,21 @@ ILOOP:
 			if isTransportOver(d) {
 				break ILOOP
 			}
-			ds := strings.Split(d, " ")
-			length := len(ds)
-			if len(ds) > 0 {
-				if ds[0] == "ADD" {
-					parseAdd(ds, length)
+			messages := readData(d)
+			for _, message := range messages {
+				ds := strings.Split(message, " ")
+				length := len(ds)
+				if len(ds) > 0 {
+					if ds[0] == "ADD" {
+						parseAdd(ds, length)
+					}
+				}
+
+				if message == "GET MAP" {
+					sendMap(w)
 				}
 			}
 
-			if d == "GET MAP" {
-				sendMap(w)
-			}
 
 		default:
 			log.Printf("Receive data failed:%s", err)
@@ -203,6 +207,18 @@ ILOOP:
 	w.Flush()
 	log.Printf("Send: %s", Message)
 
+}
+
+func readData(data string) []string {
+	messages := make([]string, 0)
+	strs := strings.Split(data, ";")
+	for _, str := range strs {
+		if str != ";" {
+			messages = append(messages, str)
+		}
+	}
+
+	return messages
 }
 
 func parseAdd(ds []string, length int) {
@@ -232,6 +248,10 @@ func sendMap(w *bufio.Writer) {
 	}
 
 	_, err = w.Write([]byte(message))
+	if err != nil {
+		fmt.Println(err)
+	}
+	_, err = w.Write([]byte(";"))
 	if err != nil {
 		fmt.Println(err)
 	}
