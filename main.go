@@ -194,7 +194,7 @@ ILOOP:
 			}
 
 		default:
-			log.Fatalf("Receive data failed:%s", err)
+			log.Printf("Receive data failed:%s", err)
 			return
 		}
 
